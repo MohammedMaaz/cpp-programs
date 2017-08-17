@@ -1,0 +1,25 @@
+It is a simple Database program made with c++ filing concept.
+
+To run the program double click the stdnt_db.exe file.
+
+As you enter or modify records within the program they will automatically
+update on an external "students_databse.txt" file.
+
+Also due to the use of filing the data updated/recorded through the program
+is permanent, i.e you donot lose the records even if the program is closed!
+
+DON'T DELETE the files folder or anything within it otherwise you will
+lose the records and the program may also missbehave.
+
+For the code of this program, visit:
+https://raw.githubusercontent.com/MohammedMaaz/Practice-Programs/master/Random%20Programs/stdnt_db.cpp
+
+Feel free to share your views, suggestions and any bugs youf found while
+using the program.
+
+You can also contribute to this code by downloading the code from the above
+address and modifying it in a positive manner.
+
+Thankyou for your cooperation!
+					Regards: Mohammed Maaz,
+						 Maaz Productions.

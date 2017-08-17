@@ -1,0 +1,7 @@
+***************** Student's Database File *****************
+
+
+Rec No.    Roll No.    Name                                CGPA
+
+0          229         Hamza                               3.50
+1          227         Maaz                                3.73
