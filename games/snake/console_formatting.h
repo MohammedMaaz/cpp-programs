@@ -203,13 +203,18 @@ int getPixelColor(short x, short y)
     return rAttr/16;
 }
 
-bool setBgClr(string BgClrName, int len = 2000)
+bool setBgClr(string BgClrName, bool whole=false)
 {
     //Declarations :
     HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
     COORD rCords = {0,0}, wCords;
     DWORD written = 0;
     short x,y, futureClr;
+    int len;
+    if(whole)
+        len = (getConsoleWidth()+1)*300; //for coloring whole console
+    else
+        len = (getConsoleHeight()+1)*(getConsoleWidth()+1); //for coloring only visible screen
     vector<WORD> rAttr(len*sizeof(WORD));
     WORD wBgClr, wFgClr;
 
@@ -300,17 +305,36 @@ void colorArea(string fgClrName, short x, short y, int units, string bgClrName =
     WriteConsoleOutputAttribute(stdout_handle, &Attr[0], units, coords, &written);
 }
 
-
 void Locate(short x, short y) {
     COORD pos = {x, y};
     HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleCursorPosition(output, pos);
 }
 
-void cursorVisAndSize(bool visibility, short len = 20)
+bool getCursorVisibility(void)
+{
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO info;
+
+    GetConsoleCursorInfo(h, &info);
+    return info.bVisible;
+}
+
+short getCursorSize(void)
+{
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO info;
+
+    GetConsoleCursorInfo(h, &info);
+    return info.dwSize;
+}
+
+void cursorVisAndSize(bool visibility, short len = -1)
 {
     if(len<1 || len>100)
-        len = 10;
+    {
+        len = getCursorSize(); //don't change length
+    }
     HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO info;
     info.dwSize = len;
@@ -343,4 +367,182 @@ void clrdLine(string clr, short x1, short y1, short x2, short y2)
     for(int i=0; i<abs(y2-y1); ++i)
         colorArea( clr,leastX,leastY+i,abs(x2-x1),clr );
 }
+
+struct _location
+    {
+        short x;
+        short y;
+    };
+
+class Menu
+{
+private:
+    vector<string> menu;
+    string heading="";
+    string menuClr="L Cyan", headingClr="L Red", selectedClr="L Yellow";
+    struct _location menuPos = {34, 5};
+    struct _location headingPos = {-1,1};
+    short y_spacing = 2;
+    bool ptr_visible = true, c_scr = false;
+
+public:
+    Menu(vector<string> userMenu)
+    {
+        menu = userMenu;
+    }
+
+    void setMenuColor(string m_clr)
+    {
+        menuClr = m_clr;
+    }
+
+    void setMenuPosition(short x, short y)
+    {
+        if( x<2 || x>getConsoleWidth() || y<0 || y>getConsoleHeight() )
+            return;
+        menuPos = {x,y};
+    }
+
+    void setHeading(string _heading)
+    {
+        if(_heading.size()>(getConsoleWidth()-headingPos.x+1))
+            heading.resize(getConsoleWidth()-headingPos.x+1);
+        heading = _heading;
+    }
+
+    void setHeadingColor(string h_clr)
+    {
+        headingClr = h_clr;
+    }
+
+    void setHeadingPosition(short x, short y)
+    {
+        if( x<0 || x>getConsoleWidth() || y<0 || y>getConsoleHeight() )
+            return;
+        headingPos = {x,y};
+    }
+
+    void setSelectionColor(string s_clr)
+    {
+        selectedClr = s_clr;
+    }
+
+    void setVerticalSpacing(short sp)
+    {
+        if(sp<1 || sp>5)
+            return;
+        y_spacing = sp;
+    }
+
+    void showPointer(bool p)
+    {
+        ptr_visible = p;
+    }
+
+    void continousScrolling(bool scr)
+    {
+        c_scr = scr;
+    }
+
+    int drawMenu(void)
+    {
+        //get cursor's current state before hiding
+        bool prevCursorVis = getCursorVisibility();
+        short prevCursorSize = getCursorSize();
+        cursorVisAndSize(0); //hide cursor
+
+        //displaying heading
+        if(headingPos.x == -1)
+        {
+            Locate((getConsoleWidth()-heading.size())/2, headingPos.y);
+            cout << heading;
+            colorArea(headingClr, (getConsoleWidth()-heading.size())/2, headingPos.y, heading.size());
+        }
+        else
+        {
+            Locate(headingPos.x, headingPos.y);
+            cout << heading;
+            colorArea(headingClr, headingPos.x, headingPos.y, heading.size());
+        }
+
+        //displaying menus
+        for(int i=0; i<menu.size(); ++i)
+        {
+            Locate(menuPos.x, menuPos.y+y_spacing*i);
+            cout << menu[i];
+            colorArea(menuClr, menuPos.x, menuPos.y+y_spacing*i, menu[i].size());
+        }
+
+        struct _location prevCursor, newCursor{menuPos.x-2,menuPos.y};
+        int i=0;
+        string ch;
+        if(ptr_visible)
+            ch = (char)175;
+        else
+            ch=" ";
+        //showing first arrow indicator
+        WriteTextAtLoc(ch,newCursor.x, newCursor.y);
+        colorArea(selectedClr, newCursor.x, newCursor.y, 2+menu[i].size());
+
+    keyPressWaiting:
+        switch(getch())
+        {
+        case 72: //Up
+            if(i==0)
+            {
+                if(c_scr)
+                {
+                    i=menu.size()-1;
+                    prevCursor = newCursor;
+                    newCursor.y = newCursor.y+i*y_spacing;
+                    colorArea(menuClr, prevCursor.x, prevCursor.y, 2+menu[0].size()); // de-color previous menu
+                }
+                else
+                    goto keyPressWaiting;
+            }
+            else
+            {
+                prevCursor = newCursor;
+                newCursor.y = newCursor.y-y_spacing;
+                --i;
+                colorArea(menuClr, prevCursor.x, prevCursor.y, 2+menu[i+1].size()); // de-color previous menu
+            }
+            break;
+
+        case 80: //Down
+            if(i==menu.size()-1)
+            {
+                if(c_scr)
+                {
+                    prevCursor = newCursor;
+                    newCursor.y = newCursor.y-i*y_spacing;
+                    colorArea(menuClr, prevCursor.x, prevCursor.y, 2+menu[i].size()); // de-color previous menu
+                    i=0;
+                }
+                else
+                    goto keyPressWaiting;
+            }
+            else
+            {
+                prevCursor = newCursor;
+                newCursor.y = newCursor.y+y_spacing;
+                ++i;
+                colorArea(menuClr, prevCursor.x, prevCursor.y, 2+menu[i-1].size()); // de-color previous menu
+            }
+            break;
+
+        case '\r':
+            cursorVisAndSize(prevCursorVis, prevCursorSize); //get cursor to it's previous state before returning
+            return (i+1);
+        }
+        //cout << "x: " << prevCursor.x << "  y: " << prevCursor.y << endl;
+        WriteTextAtLoc(ch,newCursor.x, newCursor.y); //new cursor position
+        WriteTextAtLoc(" ",prevCursor.x, prevCursor.y); //remove previous cursor
+        colorArea(selectedClr, newCursor.x, newCursor.y, 2+menu[i].size()); //color selected area
+        goto keyPressWaiting;
+    }
+};
+
+
+
 
