@@ -1,6 +1,6 @@
 // ******************** PLEASE READ THE DOCUMENTATION BEFORE USING THESE FUNCTIONS *********************
 
-// ABSTRACTION(OR DEVELOPED) BY: MOHAMMED MAAZ BIN KHAWAR
+// ABSTRACTION BY: MOHAMMED MAAZ BIN KHAWAR
 // if you find any bug or just want to contribute in this open source project
 // just contact: maazproductions25@gmail.com or 03162627726
 
@@ -170,6 +170,17 @@ string clrCodeToStr(int clrCode)
     return clrArr[clrCode];
 }
 
+void setConsoleDimensions(short width, short height)
+{
+    SMALL_RECT r;
+    HANDLE hOut = GetStdHandle( STD_OUTPUT_HANDLE );
+    r.Left   = r.Top    = 0;
+    r.Right  = width -1;
+    r.Bottom = height -1;
+    SetConsoleWindowInfo( hOut, TRUE, &r );
+    SetConsoleScreenBufferSize(hOut, {width, 300});
+}
+
 int getConsoleWidth()
 {
     CONSOLE_SCREEN_BUFFER_INFO cns;
@@ -185,6 +196,17 @@ int getConsoleHeight()
     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cns);
     return (cns.srWindow.Bottom - cns.srWindow.Top);
 }
+
+void setConsoleScrollBarVisibility(bool vis)
+{
+    HANDLE hOut;
+    hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if(vis)
+        SetConsoleScreenBufferSize(hOut, {getConsoleWidth()+1, 300});
+    else
+        SetConsoleScreenBufferSize(hOut, {getConsoleWidth()+1, getConsoleHeight()+1});
+}
+
 
 int getCurrentClrCode(){
         CONSOLE_SCREEN_BUFFER_INFO info;
@@ -270,11 +292,11 @@ bool setFgClr(string FgClrName, string BgClrName = " ")
     return true; //confirming the color has been set.
 }
 
-void colorPixel(short x, short y, string bgClrName)
+void colorPixel(short x, short y, string bgClrName, string fgClrName="White")
 {
     short /*fgCode, bgCode,*/ clrCode;
 
-    clrCode = (clrStrToCode(bgClrName)*16);
+    clrCode = (clrStrToCode(bgClrName)*16)+clrStrToCode(fgClrName);
 
     HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
     COORD coords = {x,y};
@@ -304,6 +326,7 @@ void colorArea(string fgClrName, short x, short y, int units, string bgClrName =
 
     WriteConsoleOutputAttribute(stdout_handle, &Attr[0], units, coords, &written);
 }
+
 
 void Locate(short x, short y) {
     COORD pos = {x, y};

@@ -8,36 +8,34 @@ using namespace std;
 int main()
 {
     srand(time(NULL));
-    init(32,15,'L',3);
-    cout << " score: " << score << endl << endl;
-    cout <<"\n\n\n\n\n\n\n\n\n\n Use arrow keys to" <<endl<< " move the snake." <<endl<<endl<<" Press 'space bar'" <<endl<< " to pause/resume.";
+    Snake s1(24,13,'L',5);
 
+    WriteTextAtLoc("Press any key to start...", 12, 12);
     getch();
+    WriteTextAtLoc("                         ", 12, 12);
+    int speed = (31-s1.level)*10;
+
     thread t1(collectKeyEvents); //inputs tracking key events simultaneously
-    int speed = (31-level)*10;
     while(!gameOverCondition)
     {
-        Locate(8,0);
-        cout << score;
         Sleep(speed);
+        while(pause)
+            Sleep(1);
 
         if(!keys.empty())
         {
             direction = keys.front();
             keys.pop();
         }
-        program();
-        while(pause);
+        s1.program();
     }
-
     t1.detach();
-    //t1.join();
 
-    Locate(35,10);
+    Locate(21,11);
     cout << "Game Over!";
-    Locate(31,12);
+    Locate(16,13);
     cout << "Press 'ESC' to exit";
-    Locate(30,13);
+    Locate(15,14);
     cout << "'Enter' to Play Again";
 
     while(1)
@@ -46,7 +44,7 @@ int main()
         {
         case '\r':
             system("cls");
-            resetData();
+            s1.resetData();
             return main();
         case 27:
             system("cls");
